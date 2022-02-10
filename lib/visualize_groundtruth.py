@@ -119,7 +119,7 @@ def parse_args():
     parser.add_argument(
         '--viz_3D',
         type=str,
-        default="false",
+        default="true",
         help='visualize the 3D annotations'
     )
     parser.add_argument(
@@ -156,6 +156,7 @@ def parse_args():
         parser.print_help()
         sys.exit(1)
     return parser.parse_args()
+
 
 def coco_to_camma_kps(coco_kps):
     """
@@ -232,7 +233,6 @@ def coco_to_camma_kps(coco_kps):
         camma_kps[9, :] = rwrist.reshape(1, 3)
 
     return camma_kps
-
 
 
 def viz2d(inp, annotations, viz_attributes=False, viz_projection=False):
@@ -489,7 +489,11 @@ def plt_3dplot(fig, anns3d, camma_mvor_gt):
     for ann3d in anns3d:
         tr_mat = np.array(camma_mvor_gt['cameras_info']['camParams'][
                               'firstCamToRoomRef']).reshape((4, 4))
-        pt3d = transformGivenTrfMatrix(ann3d, tr_mat)
+        # pt3d = transformGivenTrfMatrix(ann3d, tr_mat)
+        X = ann3d['keypoints3D'][0::4]
+        Y = ann3d['keypoints3D'][1::4]
+        Z = ann3d['keypoints3D'][2::4]
+        pt3d = np.vstack((X, Y, Z))
         pers_id = ann3d['person_id']
         for idx in range(len(camma_colors_skeleton)):
             pt1 = pt3d[:, camma_pairs[idx][0] - 1][0:3]
@@ -512,11 +516,20 @@ def plt_3dplot(fig, anns3d, camma_mvor_gt):
     # ax.set_xticks([])
     # ax.set_yticks([])
     # ax.set_zticks([])
-    ax.set_xlim(-1000, 1000)
-    ax.set_ylim(-200, 2500)
-    ax.set_zlim(-200, 600)
+    # ax.set_xlim(-1000, 1000)
+    # ax.set_ylim(-200, 2500)
+    # ax.set_zlim(-200, 600)
     # plt.subplots_adjust(left=0.01, bottom=0.01, right=1.0, top=1.0, wspace=0.01, hspace=0.01)
 
+    ax.set_xlim(-1000, 1000)
+    ax.set_ylim(-1000, 1000)
+    ax.set_zlim(-200, 2200)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+    ax.azim = -90
+    ax.dist = 10
+    ax.elev = -60
 
 def visualize_pose_variability(gt):
     """
@@ -616,7 +629,7 @@ def main(args):
     if show_ann:
         # iterate over images
         # create the index
-        anno_2d, anno3d = create_index(camma_mvor_gt)
+        anno_2d, anno3d,_,_ = create_index(camma_mvor_gt)
         if viz_3d:
             fig = plt.figure(figsize=plt.figaspect(0.75))
             fig_size = plt.rcParams["figure.figsize"]
@@ -701,7 +714,7 @@ def main(args):
                     print('saving image =>', os.path.join(save_gt, 'render/' + imid3d + '.png'))
                 else:
                     plt.show()
-                    break
+                    # break
                     plt.waitforbuttonpress(-1)
     else:
         # just show the images without any annotations
@@ -718,4 +731,7 @@ def main(args):
 
 
 if __name__ == '__main__':
-    main(parse_args())
+    try:
+        main(parse_args())
+    except:
+        exit()
